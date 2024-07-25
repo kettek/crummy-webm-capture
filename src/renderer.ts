@@ -4,6 +4,7 @@ _hyperscript.browserInit()
 
 let recorder: MediaRecorder
 let frameRate: number = 60
+let bitRate: number = 2.5 * 1024 * 1024
 let captureStream: MediaStream
 
 window.startCapture = async (which: string[]) => {
@@ -33,7 +34,9 @@ window.stopCapture = async () => {
 
 window.startRecording = () => {
   const chunks: BlobPart[] = []
-  recorder = new MediaRecorder(captureStream)
+  recorder = new MediaRecorder(captureStream, {
+    videoBitsPerSecond: bitRate,
+  })
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) {
       chunks.push(e.data)
@@ -67,4 +70,8 @@ window.setFPS = (fps: number) => {
       frameRate: frameRate,
     })
   }
+}
+
+window.setBitrate = (bitrate: number) => {
+  bitRate = (bitrate || 2.5) * 1024 * 1024
 }

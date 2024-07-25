@@ -95,6 +95,11 @@
         on change
           call setFPS(my value)
       end
+
+      behavior MbpsInput
+        on change
+          call setBitrate(my value)
+      end
     </script>
   </head>
   <body>
@@ -109,6 +114,11 @@
         <label>
           <span>FPS</span>
           <input placeholder="60" id="fps" script="install FPSInput" />
+        </label>
+        <hr />
+        <label>
+          <span>Mbps</span>
+          <input placeholder="2.5" id="bitrate" script="install MbpsInput" />
         </label>
       </aside>
     </section>

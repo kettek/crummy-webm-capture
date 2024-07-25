@@ -5,6 +5,7 @@ interface Window {
   stopCapture: () => Promise<void>
   isCapturing: () => boolean
   setFPS: (fps: number) => void
+  setBitrate: (bitrate: number) => void
   api: {
     getSources: () => Promise<DesktopCapturerSource[]>
     setSource: (id: string) => void
