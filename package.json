@@ -37,6 +37,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@kettek/mediastream-gifrecorder": "^1.1.2",
     "electron-squirrel-startup": "^1.0.1",
     "hyperscript.org": "^0.9.12"
   }

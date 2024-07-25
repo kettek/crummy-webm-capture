@@ -48,8 +48,8 @@
         on click
           set <ul/>'s innerHTML to ''
           call stopCapture()
-          add .hidden to #video_section
-          remove .hidden from <ul/>
+          add .hidden to <section/>
+          remove .hidden from #source_section
           call api.getSources() then for source in it
             make <li/> called item
             set item's @data-id to source.id
@@ -71,12 +71,12 @@
             call stopCapture()
             set my innerHTML to 'Capture'
             add @disabled to me
-            add .hidden to #video_section
+            add .hidden to <section/>
           else
             call startRecording(.selected's @data-id)
             set my innerHTML to 'Stop'
-            set <ul/>'s innerHTML to ''
-            add .hidden to <ul/>
+            add .hidden to <section/>
+            remove .hidden from #video_section
           end
       end
 
@@ -85,8 +85,8 @@
           call api.setSource(my @data-id)
           set <ul/>'s innerHTML to ''
           remove @disabled from #capture
+          add .hidden to <section/>
           remove .hidden from #video_section
-          add .hidden to <ul/>
           call startCapture(my @data-id)
         end
       end
@@ -111,6 +111,11 @@
         end
         on change
           call setVideoCodec(my value)
+          if my value is 'image/gif' then
+            remove .hidden from #gif_options
+          else
+            add .hidden to #gif_options
+          end
       end
     </script>
   </head>
@@ -119,7 +124,9 @@
       <button script="install SourceButton">Get Sources</button>
       <button id="capture" script="install CaptureButton">Capture</button>
     </nav>
-    <ul></ul>
+    <section class="hidden" id="source_section">
+      <ul></ul>
+    </section>
     <section class="hidden" id="video_section">
       <video id="video" autoplay></video>
       <aside>
@@ -136,8 +143,43 @@
           <span>Video Codec</span>
           <select id="videoCodec" script="install VideoCodecSelect"></select>
         </label>
+        <aside id="gif_options" class="hidden">
+          <label>
+            <span>Dithering</span>
+            <select id="dithering" script="on change call setGifOption('dithering', my value)">
+              <option value="FloydSteinberg">Floyd-Steinberg</option>
+              <option value="FalseFloydSteinberg">False Floyd-Steinberg</option>
+              <option value="Stucki">Stucki</option>
+              <option value="Atkinson">Atkinson</option>
+              <option value="None">None</option>
+            </select>
+          </label>
+          <label>
+            <span>Quality</span>
+            <input
+              min="1"
+              max="30"
+              placeholder="10"
+              id="quality"
+              script="on change call setGifOption('quality', my value)"
+            />
+          </label>
+          <label>
+            <span>Web Workers</span>
+            <input
+              min="1"
+              max="10"
+              placeholder="4"
+              id="webWorkers"
+              script="on change call setGifOption('webWorkers', my value)"
+            />
+          </label>
+        </aside>
       </aside>
     </section>
     <script type="module" src="/src/renderer.ts"></script>
+    <div class="hidden" id="processing">
+      <p>Processing...</p>
+    </div>
   </body>
 </html>

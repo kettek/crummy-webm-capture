@@ -498,6 +498,11 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
+"@kettek/mediastream-gifrecorder@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/@kettek/mediastream-gifrecorder/-/mediastream-gifrecorder-1.1.2.tgz"
+  integrity sha512-tMye4piBFnlak9jmutqt613THBoptiNKb5ZHFeC0rQIzU1/eSRvpOAPipsj281jcns/lBcUruElgTNy/mLITpw==
+
 "@malept/cross-spawn-promise@^1.0.0":
   version "1.1.1"
   resolved "https://registry.npmjs.org/@malept/cross-spawn-promise/-/cross-spawn-promise-1.1.1.tgz"
