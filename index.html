@@ -50,6 +50,7 @@
                 set <ul/>'s innerHTML to ''
                 remove @disabled from #capture
                 remove .hidden from #video
+                add .hidden to <ul/>
                 call startCapture(my @data-id)
               end
             end
@@ -58,42 +59,46 @@
     <body>
         <nav>
             <button
-                _="on click
-            set <ul/>'s innerHTML to ''
-            call stopCapture()
-            add .hidden to #video
-            call api.getSources() then for source in it
-              make <li/> called item
-              set item's @data-id to source.id
-              set item's @script to 'install SourceItem'
-              make <span/> called name
-              set name's innerHTML to source.name
-              make <img/> called img
-              set img's src to source.thumbnail
-              put name at end of item
-              put img at end of item
-              put item at end of next <ul/>
-            end
-      "
+                _="
+                on click
+                    set <ul/>'s innerHTML to ''
+                    call stopCapture()
+                    add .hidden to #video
+                    remove .hidden from <ul/>
+                    call api.getSources() then for source in it
+                        make <li/> called item
+                        set item's @data-id to source.id
+                        set item's @script to 'install SourceItem'
+                        make <span/> called name
+                        set name's innerHTML to source.name
+                        make <img/> called img
+                        set img's src to source.thumbnail
+                        put name at end of item
+                        put img at end of item
+                        put item at end of next <ul/>
+                    end
+                "
             >
                 Get Sources
             </button>
             <button
                 id="capture"
                 disabled
-                _="on click
-            call window.isCapturing()
-            if result is true then
-              call stopCapture()
-              set my innerHTML to 'Capture'
-              add @disabled to me
-              add .hidden to #video
-            else
-              call startRecording(.selected's @data-id)
-              set my innerHTML to 'Stop'
-              set <ul/>'s innerHTML to ''
-            end
-            "
+                _="
+                on click
+                    call window.isCapturing()
+                    if result is true then
+                        call stopCapture()
+                        set my innerHTML to 'Capture'
+                        add @disabled to me
+                        add .hidden to #video
+                    else
+                        call startRecording(.selected's @data-id)
+                        set my innerHTML to 'Stop'
+                        set <ul/>'s innerHTML to ''
+                        add .hidden to <ul/>
+                    end
+                "
             >
                 Capture
             </button>
