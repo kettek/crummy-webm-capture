@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+
+    <style>
+      ul {
+        list-style-type: none;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        overflow: auto;
+      }
+      .selected {
+        background-color: lightblue;
+      }
+      body {
+        width: 100%;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: hidden;
+      }
+    </style>
+
+    <script type="text/hyperscript">
+      behavior SourceItem
+        on click
+          remove .selected from <li/>
+          add .selected to me
+          call api.setSource(my @data-id)
+        end
+      end
+    </script>
+  </head>
+  <body>
+    <nav>
+      <button
+        _="on click
+            set <ul/>'s innerHTML to ''
+            call api.getSources() then for source in it
+              make <li/> called item
+              set item's innerHTML to source.name
+              set item's @data-id to source.id
+              set item's @script to 'install SourceItem'
+              make <img/> called img
+              set img's src to source.thumbnail
+              put img at end of item
+              put item at end of next <ul/>
+            end
+      "
+      >
+        Get Sources
+      </button>
+      <button
+        _="on click
+            call window.isCapturing()
+            if result is true then
+              call stopCapture()
+              set my innerHTML to 'Capture'
+            else
+              call startCapture(.selected's @data-id)
+              set my innerHTML to 'Stop'
+              set <ul/>'s innerHTML to ''
+            end
+            "
+      >
+        Capture
+      </button>
+    </nav>
+    <ul></ul>
+    <video id="video" autoplay></video>
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
+</html>
