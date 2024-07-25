@@ -1,45 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Hello World!</title>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Hello World!</title>
 
-    <style>
-      ul {
-        list-style-type: none;
-        padding: 0;
-        display: flex;
-        flex-wrap: wrap;
-        flex-direction: row;
-        overflow: auto;
-      }
-      .selected {
-        background-color: lightblue;
-      }
-      body {
-        width: 100%;
-        height: 100vh;
-        display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto;
-        overflow: hidden;
-      }
-    </style>
+        <style>
+            ul {
+                list-style-type: none;
+                padding: 0;
+                overflow: auto;
+            }
+            li {
+                display: inline-grid;
+                grid-template-rows: auto auto;
+                align-items: center;
+                justify-items: center;
+                max-width: 200px;
+                max-height: 200px;
+                margin: 10px;
+            }
+            li img {
+                max-width: 100%;
+                max-height: 100%;
+            }
+            body {
+                width: 100%;
+                height: 100vh;
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr) auto;
+                align-items: center;
+                justify-items: center;
+                overflow: hidden;
+            }
+            video {
+                max-width: 100%;
+                max-height: 100%;
+            }
+        </style>
 
-    <script type="text/hyperscript">
-      behavior SourceItem
-        on click
-          remove .selected from <li/>
-          add .selected to me
-          call api.setSource(my @data-id)
-        end
-      end
-    </script>
-  </head>
-  <body>
-    <nav>
-      <button
-        _="on click
+        <script type="text/hyperscript">
+            behavior SourceItem
+              on click
+                call api.setSource(my @data-id)
+                set <ul/>'s innerHTML to ''
+                remove @disabled from #capture
+                call startCapture(my @data-id)
+              end
+            end
+        </script>
+    </head>
+    <body>
+        <nav>
+            <button
+                _="on click
             set <ul/>'s innerHTML to ''
+            call stopCapture()
             call api.getSources() then for source in it
               make <li/> called item
               set item's innerHTML to source.name
@@ -51,27 +66,30 @@
               put item at end of next <ul/>
             end
       "
-      >
-        Get Sources
-      </button>
-      <button
-        _="on click
+            >
+                Get Sources
+            </button>
+            <button
+                id="capture"
+                disabled
+                _="on click
             call window.isCapturing()
             if result is true then
               call stopCapture()
               set my innerHTML to 'Capture'
+              add @disabled to me
             else
-              call startCapture(.selected's @data-id)
+              call startRecording(.selected's @data-id)
               set my innerHTML to 'Stop'
               set <ul/>'s innerHTML to ''
             end
             "
-      >
-        Capture
-      </button>
-    </nav>
-    <ul></ul>
-    <video id="video" autoplay></video>
-    <script type="module" src="/src/renderer.ts"></script>
-  </body>
+            >
+                Capture
+            </button>
+        </nav>
+        <ul></ul>
+        <video id="video" autoplay></video>
+        <script type="module" src="/src/renderer.ts"></script>
+    </body>
 </html>

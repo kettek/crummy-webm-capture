@@ -1,4 +1,6 @@
 interface Window {
+  startRecording: () => void
+  stopRecording: () => void
   startCapture: (which: string[]) => Promise<MediaStream>
   stopCapture: () => Promise<void>
   isCapturing: () => boolean

@@ -22,7 +22,7 @@ ipcMain.handle('get-sources', async (): Promise<CaptureTarget[]> => {
   })
 })
 
-let captureSource: string = ''
+let captureSource = ''
 ipcMain.handle('set-source', (_, id: string) => {
   console.log('set source', id)
   captureSource = id

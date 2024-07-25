@@ -23,23 +23,6 @@ window.startCapture = async (which: string[]) => {
     const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
     video.srcObject = captureStream
     video.onloadedmetadata = () => video.play()
-
-    const chunks: BlobPart[] = []
-    recorder = new MediaRecorder(captureStream)
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunks.push(e.data)
-      }
-    }
-    recorder.onstop = async () => {
-      video.pause()
-      video.srcObject = null
-      const path = await window.api.getSavePath()
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      await window.api.writeFile(path, await blob.arrayBuffer())
-    }
-
-    recorder.start()
   } catch (err) {
     console.error(`Error: ${err}`)
   }
@@ -47,10 +30,37 @@ window.startCapture = async (which: string[]) => {
 }
 
 window.stopCapture = async () => {
+  const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
+  video.pause()
+  video.srcObject = null
+
+  window.stopRecording()
+}
+
+window.startRecording = () => {
+  const chunks: BlobPart[] = []
+  recorder = new MediaRecorder(captureStream, {
+    videoKeyFrameIntervalCount: 144,
+  })
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) {
+      chunks.push(e.data)
+    }
+  }
+  recorder.onstop = async () => {
+    const path = await window.api.getSavePath()
+    const blob = new Blob(chunks, { type: 'video/webm' })
+    await window.api.writeFile(path, await blob.arrayBuffer())
+  }
+
+  recorder.start()
+}
+
+window.stopRecording = () => {
   if (recorder) {
     recorder.stop()
+    recorder = null
   }
-  return null
 }
 
 window.isCapturing = () => {
