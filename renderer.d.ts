@@ -6,10 +6,12 @@ interface Window {
   isCapturing: () => boolean
   setFPS: (fps: number) => void
   setBitrate: (bitrate: number) => void
+  setVideoCodec: (codec: string) => void
+  videoTypes: Record<string, string>
   api: {
     getSources: () => Promise<DesktopCapturerSource[]>
     setSource: (id: string) => void
-    getSavePath: () => Promise<string>
+    getSavePath: (type: string) => Promise<string>
     writeFile: (path: string, data: ArrayBuffer) => Promise<void>
   }
 }

@@ -24,20 +24,20 @@ ipcMain.handle('get-sources', async (): Promise<CaptureTarget[]> => {
 
 let captureSource = ''
 ipcMain.handle('set-source', (_, id: string) => {
-  console.log('set source', id)
   captureSource = id
 })
 
-ipcMain.handle('get-save-path', async () => {
+ipcMain.handle('get-save-path', async (_, type: string) => {
+  type = type.split(';')[0]
+  const ext = type.split('/')[1]
   const result = await dialog.showSaveDialog({
-    defaultPath: 'capture.webm',
-    filters: [{ name: 'WebM', extensions: ['webm'] }],
+    defaultPath: 'capture.' + ext,
+    filters: [{ name: type, extensions: [ext] }],
   })
   return result.filePath
 })
 
 ipcMain.handle('write-file', async (_, path: string, data: ArrayBuffer) => {
-  console.log('write', path, data)
   try {
     await fs.promises.writeFile(path, Buffer.from(data))
   } catch (e) {

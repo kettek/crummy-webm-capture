@@ -23,6 +23,11 @@ section#video_section {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+aside {
+  display: flex;
+  flex-direction: column;
+}
+
 label span {
   display: inline-block;
   padding: 0 0.5rem;

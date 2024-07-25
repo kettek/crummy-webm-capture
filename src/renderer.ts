@@ -5,6 +5,7 @@ _hyperscript.browserInit()
 let recorder: MediaRecorder
 let frameRate: number = 60
 let bitRate: number = 2.5 * 1024 * 1024
+let videoType: string = ''
 let captureStream: MediaStream
 
 window.startCapture = async (which: string[]) => {
@@ -43,8 +44,8 @@ window.startRecording = () => {
     }
   }
   recorder.onstop = async () => {
-    const path = await window.api.getSavePath()
-    const blob = new Blob(chunks, { type: 'video/webm' })
+    const path = await window.api.getSavePath(videoType)
+    const blob = new Blob(chunks, { type: videoType })
     await window.api.writeFile(path, await blob.arrayBuffer())
   }
 
@@ -75,3 +76,24 @@ window.setFPS = (fps: number) => {
 window.setBitrate = (bitrate: number) => {
   bitRate = (bitrate || 2.5) * 1024 * 1024
 }
+
+window.setVideoCodec = (codec: string) => {
+  videoType = codec
+}
+
+const types = {
+  'webm vp9': 'video/webm;codecs="vp9"',
+  'webm vp8': 'video/webm;codecs="vp8"',
+  mp4: 'video/mp4',
+  '3gpp': 'video/3gpp',
+  '3gp2': 'video/3gp2',
+}
+
+window.videoTypes = {}
+for (const [key, value] of Object.entries(types)) {
+  if (MediaRecorder.isTypeSupported(value)) {
+    window.videoTypes[key] = value
+  }
+}
+
+videoType = window.videoTypes[Object.entries(window.videoTypes)[0][0]]

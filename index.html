@@ -100,6 +100,18 @@
         on change
           call setBitrate(my value)
       end
+
+      behavior VideoCodecSelect
+        init
+          for codec in Object.entries(window.videoTypes)
+            make <option/> called option
+            set option's value to codec[1]
+            set option's innerHTML to codec[0]
+            put option at end of me
+        end
+        on change
+          call setVideoCodec(my value)
+      end
     </script>
   </head>
   <body>
@@ -119,6 +131,10 @@
         <label>
           <span>Mbps</span>
           <input placeholder="2.5" id="bitrate" script="install MbpsInput" />
+        </label>
+        <label>
+          <span>Video Codec</span>
+          <select id="videoCodec" script="install VideoCodecSelect"></select>
         </label>
       </aside>
     </section>
