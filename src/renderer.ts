@@ -39,9 +39,7 @@ window.stopCapture = async () => {
 
 window.startRecording = () => {
   const chunks: BlobPart[] = []
-  recorder = new MediaRecorder(captureStream, {
-    videoKeyFrameIntervalCount: 144,
-  })
+  recorder = new MediaRecorder(captureStream)
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) {
       chunks.push(e.data)
