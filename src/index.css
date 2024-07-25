@@ -17,3 +17,21 @@ button {
     border: none;
     font-size: 1rem;
 }
+
+section#video_section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+label span {
+    padding: 0 0.5rem;
+    color: #f8f9fa;
+}
+
+label input {
+    background-color: #495057;
+    color: #f8f9fa;
+    padding: 0.1rem;
+    border: none;
+    width: 2rem;
+}

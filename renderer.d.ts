@@ -4,6 +4,7 @@ interface Window {
   startCapture: (which: string[]) => Promise<MediaStream>
   stopCapture: () => Promise<void>
   isCapturing: () => boolean
+  setFPS: (fps: number) => void
   api: {
     getSources: () => Promise<DesktopCapturerSource[]>
     setSource: (id: string) => void

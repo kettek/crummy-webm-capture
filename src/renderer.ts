@@ -2,22 +2,16 @@ import './index.css'
 import _hyperscript from 'hyperscript.org'
 _hyperscript.browserInit()
 
-const displayMediaOptions: DisplayMediaStreamOptions = {
-  //audio: true,
-  video: {
-    frameRate: 144,
-  },
-}
-
 let recorder: MediaRecorder
+let frameRate: number = 60
 let captureStream: MediaStream
 
 window.startCapture = async (which: string[]) => {
   try {
-    captureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
-
-    captureStream.getTracks()[0].applyConstraints({
-      frameRate: 144, // Just 4 testing.
+    captureStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        frameRate,
+      },
     })
 
     const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
@@ -62,6 +56,15 @@ window.stopRecording = () => {
 }
 
 window.isCapturing = () => {
-  console.log('oh nooo', recorder, recorder?.state)
   return recorder?.state === 'recording'
+}
+
+window.setFPS = (fps: number) => {
+  frameRate = fps || 60
+
+  if (captureStream) {
+    captureStream.getTracks()[0].applyConstraints({
+      frameRate: frameRate,
+    })
+  }
 }
