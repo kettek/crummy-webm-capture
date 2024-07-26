@@ -55,6 +55,8 @@ const createWindow = () => {
     },
   })
 
+  mainWindow.removeMenu()
+
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     desktopCapturer.getSources({ types: ['window', 'screen'] }).then((sources) => {
       const result = sources.find((source) => source.id === captureSource)
