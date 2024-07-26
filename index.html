@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -46,6 +46,11 @@
     <script type="text/hyperscript">
       behavior SourceButton
         on click
+          trigger select on me
+        on contextmenu
+          wait 2s
+          trigger select on me
+        on select
           set <ul/>'s innerHTML to ''
           call stopCapture()
           add .hidden to <section/>
@@ -66,6 +71,11 @@
 
       behavior CaptureButton
         on click
+          trigger select on me
+        on contextmenu
+          wait 2s
+          trigger select on me
+        on select
           call window.isCapturing()
           if result is true then
             call stopCapture()
