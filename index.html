@@ -34,7 +34,7 @@
         justify-items: center;
         overflow: hidden;
       }
-      video {
+      canvas {
         max-width: 100%;
         max-height: 100%;
       }
@@ -43,6 +43,28 @@
       }
     </style>
 
+    <script type="text/hyperscript">
+      behavior GIFToggle
+        on change
+          call setGif(my checked)
+          if my checked then
+            remove .hidden from #gif_options
+          else
+            add .hidden to #gif_options
+          end
+      end
+    </script>
+    <script type="text/hyperscript">
+      behavior WebmToggle
+        on change
+          call setWebm(my checked)
+          if my checked then
+            remove .hidden from #webm_options
+          else
+            add .hidden to #webm_options
+          end
+      end
+    </script>
     <script type="text/hyperscript">
       behavior SourceButton
         on click
@@ -76,7 +98,7 @@
           wait 2s
           trigger select on me
         on select
-          call window.isCapturing()
+          call window.isRecording()
           if result is true then
             call stopCapture()
             set my innerHTML to 'Capture'
@@ -105,12 +127,8 @@
         on change
           call setFPS(my value)
       end
-
-      behavior MbpsInput
-        on change
-          call setBitrate(my value)
-      end
-
+    </script>
+    <script type="text/hyperscript">
       behavior VideoCodecSelect
         init
           for codec in Object.entries(window.videoTypes)
@@ -120,12 +138,7 @@
             put option at end of me
         end
         on change
-          call setVideoCodec(my value)
-          if my value is 'image/gif' then
-            remove .hidden from #gif_options
-          else
-            add .hidden to #gif_options
-          end
+          call setWebmOption('videoType', my value)
       end
     </script>
   </head>
@@ -138,7 +151,7 @@
       <ul></ul>
     </section>
     <section class="hidden" id="video_section">
-      <video id="video" autoplay></video>
+      <canvas id="video"></canvas>
       <aside>
         <label>
           <span>FPS</span>
@@ -146,22 +159,41 @@
         </label>
         <hr />
         <label>
-          <span>Mbps</span>
-          <input placeholder="2.5" id="bitrate" script="install MbpsInput" />
+          <span>webm/mp4</span>
+          <input type="checkbox" id="webm" checked script="install WebmToggle" />
         </label>
+        <aside id="webm_options">
+          <label>
+            <span>Mbps</span>
+            <input placeholder="2.5" script="on change call setWebmOption('bitRate', my value)" />
+          </label>
+          <label>
+            <span>Video Codec</span>
+            <select id="videoCodec" script="install VideoCodecSelect"></select>
+          </label>
+        </aside>
         <label>
-          <span>Video Codec</span>
-          <select id="videoCodec" script="install VideoCodecSelect"></select>
+          <span>gif</span>
+          <input type="checkbox" id="gif" script="install GIFToggle" />
         </label>
         <aside id="gif_options" class="hidden">
           <label>
+            <span>Framerate</span>
+            <input
+              min="1"
+              max="60"
+              placeholder="15"
+              script="on change call setGifOption('framerate', my value)"
+            />
+          </label>
+          <label>
             <span>Dithering</span>
-            <select id="dithering" script="on change call setGifOption('dithering', my value)">
+            <select script="on change call setGifOption('dithering', my value)">
+              <option value="None">None</option>
               <option value="FloydSteinberg">Floyd-Steinberg</option>
               <option value="FalseFloydSteinberg">False Floyd-Steinberg</option>
               <option value="Stucki">Stucki</option>
               <option value="Atkinson">Atkinson</option>
-              <option value="None">None</option>
             </select>
           </label>
           <label>
@@ -170,7 +202,6 @@
               min="1"
               max="30"
               placeholder="10"
-              id="quality"
               script="on change call setGifOption('quality', my value)"
             />
           </label>
@@ -180,7 +211,6 @@
               min="1"
               max="10"
               placeholder="4"
-              id="webWorkers"
               script="on change call setGifOption('webWorkers', my value)"
             />
           </label>

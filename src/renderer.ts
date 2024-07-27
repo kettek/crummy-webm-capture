@@ -3,14 +3,128 @@ import _hyperscript from 'hyperscript.org'
 import '@kettek/mediastream-gifrecorder/dist/GifRecorder.js'
 _hyperscript.browserInit()
 
-let recorder: MediaRecorder
+const canvas: HTMLCanvasElement = document.getElementById('video') as HTMLCanvasElement
 let frameRate: number = 60
-let bitRate: number = 2.5 * 1024 * 1024
-let gifVideoDithering: string | boolean = 'FloydSteinberg'
-let gifVideoQuality: number = 10
-let gifWebWorkers: number = 4
-let videoType: string = ''
 let captureStream: MediaStream
+let recordStream: MediaStream
+
+// Recorder is our interface that allows simply recording videos/gifs/whatever from a MediaStream.
+interface Recorder {
+  enabled: boolean
+  start: (stream: MediaStream) => void
+  stop: () => void
+  onDone: (blob: Blob) => Promise<void>
+  setOption: (option: string, value: boolean | string | number) => void
+  VideoType(): string
+}
+
+class GifRecorder implements Recorder {
+  enabled: boolean = false
+  recorder: MediaRecorder = undefined
+  frameRate: number = 15
+  dithering: string | boolean = false
+  quality: number = 10
+  webWorkers: number = 4
+  onDone: (blob: Blob) => Promise<void>
+  start(stream: MediaStream) {
+    this.recorder = new window.GifRecorder(stream, {
+      videoFramesPerSecond: this.frameRate,
+      videoDithering: this.dithering,
+      videoQuality: this.quality,
+      webWorkers: this.webWorkers,
+    })
+    // This is emitted when the GIF is done processing.
+    this.recorder.addEventListener('dataavailable', async (e) => {
+      await this.onDone(e.data)
+    })
+    // This is emitted when the GIF is done processing.
+    this.recorder.addEventListener('stop', async () => {
+      // TODO: emit
+    })
+    this.recorder.start()
+  }
+  stop() {
+    if (!this.recorder) return
+    this.recorder.stop()
+    this.recorder = undefined
+  }
+  setOption(option: string, value: boolean | string | number) {
+    switch (option) {
+      case 'frameRate':
+        this.frameRate = value as number
+        break
+      case 'dithering':
+        if (value === 'None') {
+          value = false
+        }
+        this.dithering = value as string
+        break
+      case 'quality':
+        this.quality = value as number
+        break
+      case 'webWorkers':
+        this.webWorkers = value as number
+        break
+    }
+  }
+  VideoType(): string {
+    return 'image/gif'
+  }
+}
+
+class VideoRecorder implements Recorder {
+  enabled: boolean = true
+  recorder: MediaRecorder = undefined
+  frameRate: number = 60
+  bitRate: number = 2.5 * 1024 * 1024
+  videoType: string = 'video/webm;codecs="vp9"'
+  onDone: (blob: Blob) => Promise<void>
+  start(stream: MediaStream) {
+    const chunks: BlobPart[] = []
+    this.recorder = new MediaRecorder(stream, {
+      videoBitsPerSecond: this.bitRate,
+    })
+    this.recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunks.push(e.data)
+      }
+    }
+    this.recorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: this.videoType })
+      await this.onDone(blob)
+    }
+    this.recorder.start()
+  }
+  stop() {
+    if (!this.recorder) return
+    this.recorder.stop()
+    this.recorder = undefined
+  }
+  setOption(option: string, value: boolean | string | number) {
+    switch (option) {
+      case 'videoType':
+        this.videoType = value as string
+        break
+      case 'bitRate':
+        this.bitRate = (value as number) * 1024 * 1024
+        break
+    }
+  }
+  VideoType(): string {
+    return this.videoType
+  }
+}
+
+const videoRecorder = new VideoRecorder()
+videoRecorder.onDone = async (blob: Blob) => {
+  const path = await window.api.getSavePath(videoRecorder.VideoType())
+  await window.api.writeFile(path, await blob.arrayBuffer())
+}
+const gifRecorder = new GifRecorder()
+gifRecorder.onDone = async (blob: Blob) => {
+  const path = await window.api.getSavePath(gifRecorder.VideoType())
+  await window.api.writeFile(path, await blob.arrayBuffer())
+}
 
 window.startCapture = async () => {
   try {
@@ -20,9 +134,30 @@ window.startCapture = async () => {
       },
     })
 
-    const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
-    video.srcObject = captureStream
-    video.onloadedmetadata = () => video.play()
+    const ctx = canvas.getContext('2d')
+
+    const processor = new MediaStreamTrackProcessor({ track: captureStream.getVideoTracks()[0] })
+    const reader = processor.readable.getReader()
+
+    canvas.width = captureStream.getVideoTracks()[0].getSettings().width
+    canvas.height = captureStream.getVideoTracks()[0].getSettings().height
+
+    const read = () => {
+      reader.read().then(({ done, value }) => {
+        if (value) {
+          if (value.displayWidth !== canvas.width || value.displayHeight !== canvas.height) {
+            canvas.width = value.displayWidth
+            canvas.height = value.displayHeight
+          }
+          ctx.drawImage(value, 0, 0)
+          value.close()
+        }
+        if (!done) {
+          read()
+        }
+      })
+    }
+    read()
   } catch (err) {
     console.error(`Error: ${err}`)
   }
@@ -30,58 +165,33 @@ window.startCapture = async () => {
 }
 
 window.stopCapture = async () => {
-  const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
-  video.pause()
-  video.srcObject = null
+  if (captureStream) {
+    captureStream.getTracks().forEach((track) => track.stop())
+  }
 
   window.stopRecording()
 }
 
 window.startRecording = () => {
-  const chunks: BlobPart[] = []
-  if (videoType === 'image/gif') {
-    recorder = new window.GifRecorder(captureStream, {
-      videoFramesPerSecond: frameRate,
-      videoDithering: gifVideoDithering,
-      videoQuality: gifVideoQuality,
-      webWorkers: gifWebWorkers,
-    })
-    recorder.addEventListener('dataavailable', async (e) => {
-      document.getElementById('processing').classList.add('hidden')
-      const path = await window.api.getSavePath(videoType)
-      await window.api.writeFile(path, await e.data.arrayBuffer())
-    })
-    recorder.addEventListener('stop', async () => {
-      document.getElementById('processing').classList.remove('hidden')
-    })
-  } else {
-    recorder = new MediaRecorder(captureStream, {
-      videoBitsPerSecond: bitRate,
-    })
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunks.push(e.data)
-      }
-    }
-    recorder.onstop = async () => {
-      const path = await window.api.getSavePath(videoType)
-      const blob = new Blob(chunks, { type: videoType })
-      await window.api.writeFile(path, await blob.arrayBuffer())
-    }
+  recordStream = canvas.captureStream(frameRate)
+  if (videoRecorder.enabled) {
+    videoRecorder.start(recordStream)
   }
-
-  recorder.start()
+  if (gifRecorder.enabled) {
+    gifRecorder.start(recordStream)
+  }
 }
 
 window.stopRecording = () => {
-  if (recorder) {
-    recorder.stop()
-    recorder = null
+  if (recordStream) {
+    recordStream.getTracks().forEach((track) => track.stop())
   }
+  videoRecorder.stop()
+  gifRecorder.stop()
 }
 
-window.isCapturing = () => {
-  return recorder?.state === 'recording'
+window.isRecording = (): boolean => {
+  return videoRecorder.recorder !== undefined || gifRecorder.recorder !== undefined
 }
 
 window.setFPS = (fps: number) => {
@@ -94,29 +204,20 @@ window.setFPS = (fps: number) => {
   }
 }
 
-window.setBitrate = (bitrate: number) => {
-  bitRate = (bitrate || 2.5) * 1024 * 1024
+window.setGifOption = (option: string, value: string | number) => {
+  gifRecorder.setOption(option, value)
 }
 
-window.setVideoCodec = (codec: string) => {
-  videoType = codec
+window.setGif = (b: boolean) => {
+  gifRecorder.enabled = b
 }
 
-window.setGifOption = (option: string, value: boolean | string | number) => {
-  switch (option) {
-    case 'dithering':
-      if (value === 'None') {
-        value = false
-      }
-      gifVideoDithering = value as string
-      break
-    case 'quality':
-      gifVideoQuality = value as number
-      break
-    case 'webWorkers':
-      gifWebWorkers = value as number
-      break
-  }
+window.setWebmOption = (option: string, value: string | number) => {
+  videoRecorder.setOption(option, value)
+}
+
+window.setWebm = (b: boolean) => {
+  videoRecorder.enabled = b
 }
 
 const types = {
@@ -133,6 +234,5 @@ for (const [key, value] of Object.entries(types)) {
     window.videoTypes[key] = value
   }
 }
-window.videoTypes['gif'] = 'image/gif'
 
-videoType = window.videoTypes[Object.entries(window.videoTypes)[0][0]]
+console.log('our types be', window.videoTypes)

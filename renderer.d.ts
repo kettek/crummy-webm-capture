@@ -1,14 +1,17 @@
 interface Window {
   startRecording: () => void
   stopRecording: () => void
+  isRecording: () => boolean
   startCapture: () => Promise<MediaStream>
   stopCapture: () => Promise<void>
-  isCapturing: () => boolean
   setFPS: (fps: number) => void
   setBitrate: (bitrate: number) => void
   setVideoCodec: (codec: string) => void
   videoTypes: Record<string, string>
   setGifOption: (option: string, value: string | number) => void
+  setGif(b: boolean): void
+  setWebmOption: (option: string, value: string | number) => void
+  setWebm(b: boolean): void
   GifRecorder: GifRecorder
   api: {
     getSources: () => Promise<DesktopCapturerSource[]>
@@ -24,6 +27,6 @@ type CaptureTarget = {
   thumbnail: string
 }
 
-interface GifRecorder implements MediaRecorder {
-  new(stream: MediaStream, options: unknown): MediaRecorder
+interface GifRecorder {
+  new (stream: MediaStream, options: unknown): MediaRecorder
 }
