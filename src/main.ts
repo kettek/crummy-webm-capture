@@ -1,75 +1,11 @@
-import { app, Menu, Tray, BrowserWindow, desktopCapturer, session, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, desktopCapturer, session, ipcMain, dialog } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
-let mainWindow: BrowserWindow
-let tray: Tray
-let isRecording = false
-
-const createTray = () => {
-  const defaultIconPath = path.join(app.getAppPath(), 'public', 'icons', 'icon1.png')
-  const recordingIconPath = path.join(app.getAppPath(), 'public', 'icons', 'icon2.png')
-
-  tray = new Tray(defaultIconPath)
-
-  tray.setToolTip('This is my application.')
-
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show App', click: () => mainWindow.show() },
-    { label: 'Quit', click: () => app.quit() },
-  ])
-  tray.setContextMenu(contextMenu)
-
-  tray.on('click', () => mainWindow.show())
+// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+if (require('electron-squirrel-startup')) {
+  app.quit()
 }
-
-// Function to update tray icon based on recording state
-const updateTrayIcon = () => {
-  const iconPath = isRecording ? path.join(app.getAppPath(), 'public', 'icons', 'icon2.png') : path.join(app.getAppPath(), 'public', 'icons', 'icon1.png')
-  tray.setImage(iconPath)
-}
-
-// Function to create the main application window
-const createWindow = () => {
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // Specify the preload script
-    },
-  })
-
-  const rendererUrl = app.isPackaged
-    ? `file://${path.join(__dirname, '..', 'renderer', 'index.html')}`
-    : 'http://localhost:5173'
-  mainWindow.loadURL(rendererUrl)
-
-  mainWindow.webContents.openDevTools()
-
-  mainWindow.on('minimize', (event) => {
-    event.preventDefault()
-    mainWindow.hide()
-    tray.displayBalloon({
-      title: 'App Hidden',
-      content: 'The app has been minimized to the tray.',
-    })
-  })
-
-  if (!tray) {
-    createTray()
-  }
-}
-
-// IPC handlers to manage recording state
-ipcMain.handle('start-recording', () => {
-  isRecording = true
-  updateTrayIcon()
-})
-
-ipcMain.handle('stop-recording', () => {
-  isRecording = false
-  updateTrayIcon()
-})
 
 ipcMain.handle('get-sources', async (): Promise<CaptureTarget[]> => {
   return (
@@ -86,6 +22,7 @@ ipcMain.handle('get-sources', async (): Promise<CaptureTarget[]> => {
   })
 })
 
+let captureSource = ''
 ipcMain.handle('set-source', (_, id: string) => {
   captureSource = id
 })
@@ -108,8 +45,50 @@ ipcMain.handle('write-file', async (_, path: string, data: ArrayBuffer) => {
   }
 })
 
+const createWindow = () => {
+  // Create the browser window.
+  const mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  })
+
+  mainWindow.removeMenu()
+
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['window', 'screen'] }).then((sources) => {
+      const result = sources.find((source) => source.id === captureSource)
+      if (!result) {
+        callback(null)
+        return
+      }
+      callback({
+        video: result,
+      })
+    })
+  })
+
+  // and load the index.html of the app.
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL)
+  } else {
+    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`))
+  }
+
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools()
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
 app.on('ready', createWindow)
 
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -117,7 +96,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
 })
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and import them here.

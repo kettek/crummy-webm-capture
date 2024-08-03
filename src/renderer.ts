@@ -8,6 +8,7 @@ let frameRate: number = 60
 let captureStream: MediaStream
 let recordStream: MediaStream
 
+// Recorder is our interface that allows simply recording videos/gifs/whatever from a MediaStream.
 interface Recorder {
   enabled: boolean
   start: (stream: MediaStream) => void
@@ -32,9 +33,11 @@ class GifRecorder implements Recorder {
       videoQuality: this.quality,
       webWorkers: this.webWorkers,
     })
+    // This is emitted when the GIF is done processing.
     this.recorder.addEventListener('dataavailable', async (e) => {
       await this.onDone(e.data)
     })
+    // This is emitted when the GIF is done processing.
     this.recorder.addEventListener('stop', async () => {
       // TODO: emit
     })
@@ -89,7 +92,6 @@ class VideoRecorder implements Recorder {
     this.recorder.onstop = async () => {
       const blob = new Blob(chunks, { type: this.videoType })
       await this.onDone(blob)
-      window.api.stopRecording()
     }
     this.recorder.start()
   }
@@ -118,7 +120,6 @@ videoRecorder.onDone = async (blob: Blob) => {
   const path = await window.api.getSavePath(videoRecorder.VideoType())
   await window.api.writeFile(path, await blob.arrayBuffer())
 }
-
 const gifRecorder = new GifRecorder()
 gifRecorder.onDone = async (blob: Blob) => {
   const path = await window.api.getSavePath(gifRecorder.VideoType())
@@ -175,7 +176,6 @@ window.startRecording = () => {
   recordStream = canvas.captureStream(frameRate)
   if (videoRecorder.enabled) {
     videoRecorder.start(recordStream)
-    window.api.startRecording()
   }
   if (gifRecorder.enabled) {
     gifRecorder.start(recordStream)
@@ -188,7 +188,6 @@ window.stopRecording = () => {
   }
   videoRecorder.stop()
   gifRecorder.stop()
-  window.api.stopRecording()
 }
 
 window.isRecording = (): boolean => {
